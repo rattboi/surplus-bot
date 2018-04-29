@@ -12,9 +12,10 @@ setup(
         'requests',
         'beautifulsoup4',
         'arrow',
+        'persist-queue',
     ],
     entry_points="""\
     [console_scripts]
-    surplus_bot = surplus.surplus:cli
+    surplus_bot = surplus.collect:run
     """,
 )

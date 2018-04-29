@@ -4,7 +4,8 @@
 import requests
 from bs4 import BeautifulSoup as bs
 import sqlite3
-import random
+import persistqueue
+import pathlib
 
 class SurplusItem:
     def __init__(self, title, price, image, link):
@@ -29,6 +30,14 @@ class SurplusItem:
                 hash(self.price) ^
                 hash(self.image) ^
                 hash(self.link))
+
+class SurplusEvent:
+    def __init__(self, event, item):
+        self.event = event
+        self.title = item.title
+        self.price = item.price
+        self.image = item.image
+        self.link = item.link
 
 class SurplusScraper:
     def scrape(self, bs_item):
@@ -65,6 +74,10 @@ class SurplusScraper:
             return "https://www.pdx.edu{}".format(link_el[0].find('a')['href'])
         return ""
 
+class Queues:
+    def __init__(self):
+        self.q_slack = persistqueue.SQLiteQueue('db/slack', auto_commit=True)
+
 class SurplusDb:
     def __init__(self, db_file):
         self.conn = sqlite3.connect(db_file)
@@ -75,7 +88,6 @@ class SurplusDb:
              (title text, price text, image text, link text)''')
 
     def get_all(self):
-
         self.c.execute('SELECT * FROM surplus')
         return [SurplusItem(i[0], i[1], i[2], i[3])
                 for i
@@ -110,38 +122,14 @@ def scrape():
     return all_items
 
 def run():
-    # Setup db connection
-    db = SurplusDb('surplus.db')
+    pathlib.Path('db').mkdir(parents=True, exist_ok=True)
+    db = SurplusDb('db/surplus.db')
 
     db_items = db.get_all()
-
     scraped_items = scrape()
 
-    print("First")
     d_set = set(db_items)
     s_set = set(scraped_items)
-    discard = random.sample(d_set, 1)[0]
-    d_set.discard(discard)
-    removed = d_set - s_set
-    added = s_set - d_set
-    generate_events(added, removed)
-
-    print("Second")
-    d_set = set(db_items)
-    s_set = set(scraped_items)
-    discard = random.sample(s_set, 1)[0]
-    s_set.discard(discard)
-    removed = d_set - s_set
-    added = s_set - d_set
-    generate_events(added, removed)
-
-    print("Third")
-    d_set = set(db_items)
-    s_set = set(scraped_items)
-    discard = random.sample(s_set, 1)[0]
-    s_set.discard(discard)
-    discard = random.sample(d_set, 1)[0]
-    d_set.discard(discard)
     removed = d_set - s_set
     added = s_set - d_set
     generate_events(added, removed)
@@ -150,9 +138,30 @@ def run():
     db.insert_items(scraped_items)
 
 def generate_events(added_set, removed_set):
-    print("Added:")
-    [i.print() for i in added_set]
-    print("Removed:")
-    [i.print() for i in removed_set]
-    return
+    queues = Queues()
 
+    print("Added:")
+    for i in added_set:
+        event = {
+            'event' : 'added',
+            'title' : i.title,
+            'price' : i.price,
+            'image' : i.image,
+            'link'  : i.link,
+        }
+        queues.q_slack.put(event)
+        i.print()
+
+    print("Removed:")
+    for i in removed_set:
+        event = {
+            'event' : 'removed',
+            'title' : i.title,
+            'price' : i.price,
+            'image' : i.image,
+            'link'  : i.link,
+        }
+        queues.q_slack.put(event)
+        i.print()
+
+run()

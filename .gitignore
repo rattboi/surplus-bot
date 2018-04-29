@@ -100,4 +100,5 @@ ENV/
 # mypy
 .mypy_cache/
 
-surplus.db
+db/
+surplus/secret.py
