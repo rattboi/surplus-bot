@@ -1,0 +1,4 @@
+requests
+beautifulsoup4
+persist-queue
+pathlib2

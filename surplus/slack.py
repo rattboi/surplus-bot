@@ -3,7 +3,10 @@ import requests
 import persistqueue
 import sys
 from persistqueue.exceptions import Empty
-import surplus.secret as secret
+try:
+    import secret as secret
+except:
+    import surplus.secret as secret
 
 def post_to_slack(event):
     webhook_url = secret.webhook_url

@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 import sqlite3
 import persistqueue
-import pathlib
+import pathlib2 as pathlib
 
 class SurplusItem:
     def __init__(self, title, price, image, link):
