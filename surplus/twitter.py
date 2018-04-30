@@ -1,10 +1,14 @@
 import sys
-import tweepy
+import time
 import requests
+import tweepy
 import persistqueue
 from persistqueue.exceptions import Empty
 
-from surplus.secret import *
+try:
+    from surplus.secret import *
+except:
+    from secret import *
 
 
 def post_to_twitter(api, event):
@@ -30,11 +34,12 @@ def post_to_twitter(api, event):
     except e:
         # if there's an image problem, just post as a status
         api.update_status(message)
+    finally:
         try:
             os.remove(filename)
         except OSError:
             pass
-    sleep(15)
+    time.sleep(15)
 
 
 def main():
@@ -49,7 +54,6 @@ def main():
             event = q.get(block=False)
             print("Posting '{}' event to Twitter".format(event['event']))
             post_to_twitter(api, event)
-            return
         except Empty:
             print("No more events to process")
             sys.exit()
