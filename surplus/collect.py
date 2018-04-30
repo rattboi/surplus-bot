@@ -78,6 +78,7 @@ class Queues:
     def __init__(self):
         self.q_slack = persistqueue.SQLiteQueue('db/slack', auto_commit=True)
         self.q_irc = persistqueue.SQLiteQueue('db/irc', auto_commit=True)
+        self.q_twitter = persistqueue.SQLiteQueue('db/twitter', auto_commit=True)
 
 class SurplusDb:
     def __init__(self, db_file):
@@ -153,6 +154,7 @@ def generate_events(added_set, removed_set):
         }
         queues.q_slack.put(event)
         queues.q_irc.put(event)
+        queues.q_twitter.put(event)
         i.print()
 
     print("Removed:")
@@ -166,6 +168,7 @@ def generate_events(added_set, removed_set):
         }
         queues.q_slack.put(event)
         queues.q_irc.put(event)
+        queues.q_twitter.put(event)
         i.print()
 
 
