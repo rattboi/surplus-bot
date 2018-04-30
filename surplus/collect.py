@@ -77,6 +77,7 @@ class SurplusScraper:
 class Queues:
     def __init__(self):
         self.q_slack = persistqueue.SQLiteQueue('db/slack', auto_commit=True)
+        self.q_irc = persistqueue.SQLiteQueue('db/irc', auto_commit=True)
 
 class SurplusDb:
     def __init__(self, db_file):
@@ -137,31 +138,35 @@ def run():
     db.clear()
     db.insert_items(scraped_items)
 
+
 def generate_events(added_set, removed_set):
     queues = Queues()
 
     print("Added:")
     for i in added_set:
         event = {
-            'event' : 'added',
-            'title' : i.title,
-            'price' : i.price,
-            'image' : i.image,
-            'link'  : i.link,
+            'event': 'added',
+            'title': i.title,
+            'price': i.price,
+            'image': i.image,
+            'link': i.link,
         }
         queues.q_slack.put(event)
+        queues.q_irc.put(event)
         i.print()
 
     print("Removed:")
     for i in removed_set:
         event = {
-            'event' : 'removed',
-            'title' : i.title,
-            'price' : i.price,
-            'image' : i.image,
-            'link'  : i.link,
+            'event': 'removed',
+            'title': i.title,
+            'price': i.price,
+            'image': i.image,
+            'link': i.link,
         }
         queues.q_slack.put(event)
+        queues.q_irc.put(event)
         i.print()
+
 
 run()
