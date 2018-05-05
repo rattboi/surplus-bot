@@ -14,7 +14,16 @@ pip install -r requirements.txt
 Setup Slack webhook secret:
 
 ```
-echo "webhook_url = <your hook>" > surplus/secret.py
+echo "webhook_url = <your hook>" >> surplus/secret.py
+```
+
+Setup Twitter bot secrets:
+
+```
+echo "twitter_api_key = '<api_key>'" >> surplus/secret.py
+echo "twitter_api_secret = '<api_secret>'" >> surplus/secret.py
+echo "twitter_token = '<access_token>'" >> surplus/secret.py
+echo "twitter_token_secret = '<access_secret>'" >> surplus/secret.py
 ```
 
 Setup crontab:
@@ -24,6 +33,7 @@ Setup crontab:
 crontab -l > mycron
 echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/slack.py"
 echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/irc.py"
+echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/twitter.py"
 echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/collect.py"
 #install new cron file
 crontab mycron
