@@ -37,7 +37,6 @@ def main():
             event = q.get(block=False)
             print("Posting '{}' event to IRC".format(event['event']))
             post_to_irc(event)
-            return
         except Empty:
             print("No more events to process")
             sys.exit()
