@@ -102,3 +102,5 @@ ENV/
 
 db/
 surplus/secret.py
+
+*.jpg
