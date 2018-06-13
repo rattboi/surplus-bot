@@ -23,15 +23,15 @@ def post_to_twitter(api, event):
     elif event_type == "removed":
         message = "*Item Removed*\n{}".format(title)
 
+    filename = 'temp.jpg'
     try:
-        filename = 'temp.jpg'
         request = requests.get(image, stream=True)
         if request.status_code == 200:
             with open(filename, 'wb') as image:
                 for chunk in request:
                     image.write(chunk)
             api.update_with_media(filename, status=message)
-    except e:
+    except Exception as e:
         # if there's an image problem, just post as a status
         api.update_status(message)
     finally:
