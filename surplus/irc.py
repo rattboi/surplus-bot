@@ -11,9 +11,9 @@ def post_to_irc(event):
     link = event['link']
 
     if event_type == "added":
-        message = "*Item Added*   {} - {} - ({})\n".format(title, price, link)
+        message = "*\x0309Item Added\x03*   \x02{}\x02 - {} - ({})\n".format(title, price, link)
     elif event_type == "removed":
-        message = "*Item Removed* {}\n".format(title)
+        message = "*\x0304Item Removed\x03* \x02{}\x02\n".format(title)
 
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,7 +37,6 @@ def main():
             event = q.get(block=False)
             print("Posting '{}' event to IRC".format(event['event']))
             post_to_irc(event)
-            return
         except Empty:
             print("No more events to process")
             sys.exit()
