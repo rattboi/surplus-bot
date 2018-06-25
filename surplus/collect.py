@@ -143,10 +143,10 @@ def run():
 def generate_events(added_set, removed_set):
     queues = Queues()
 
-    print("Added:")
-    for i in added_set:
+    print("Removed:")
+    for i in removed_set:
         event = {
-            'event': 'added',
+            'event': 'removed',
             'title': i.title,
             'price': i.price,
             'image': i.image,
@@ -157,10 +157,10 @@ def generate_events(added_set, removed_set):
         queues.q_twitter.put(event)
         i.print()
 
-    print("Removed:")
-    for i in removed_set:
+    print("Added:")
+    for i in added_set:
         event = {
-            'event': 'removed',
+            'event': 'added',
             'title': i.title,
             'price': i.price,
             'image': i.image,
