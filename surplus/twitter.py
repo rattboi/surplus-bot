@@ -15,11 +15,14 @@ def post_to_twitter(api, event):
     event_type = event['event']
     title = event['title']
     price = event['price']
+    quant = event['quantity']
     image = event['image']
     link = event['link']
 
     if event_type == "added":
-        message = "*Item Added*\n{} - {} - ({})".format(title, price, link)
+        message = "*Item Added*\n{} - {} - (#: ) - ({})".format(title, price, quant, link)
+    if event_type == "modified":
+        message = "*Item Changed*\n{} - {} - (#: ) - ({})".format(title, price, quant, link)
     elif event_type == "removed":
         message = "*Item Removed*\n{}".format(title)
 
