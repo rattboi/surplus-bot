@@ -8,6 +8,7 @@ import persistqueue
 import pathlib2 as pathlib
 import re
 
+
 class SurplusItem:
     def __init__(self, status, title, price, quantity, image, link):
         self.status = status
@@ -15,7 +16,7 @@ class SurplusItem:
         self.price = price
         self.quantity = quantity
         self.image = image
-        self.link  = link
+        self.link = link
 
     def print(self):
         print("***** Item *****")
@@ -38,6 +39,7 @@ class SurplusItem:
                 hash(self.image) ^
                 hash(self.link))
 
+
 class SurplusEvent:
     def __init__(self, event, item):
         self.event = event
@@ -46,13 +48,15 @@ class SurplusEvent:
         self.image = item.image
         self.link = item.link
 
+
 class SurplusScraper:
     def scrape_from_grid(self, bs_item):
         grid_title_el = bs_item.find_all("div", class_="views-field-title")
         if not grid_title_el:
             return None
 
-        node_url = "{}{}".format("https://www.pdx.edu",grid_title_el[0].find('a')['href'])
+        base_url = "https://www.pdx.edu"
+        node_url = "{}{}".format(base_url, grid_title_el[0].find('a')['href'])
         return self.scrape(node_url)
 
     def scrape(self, node_url):
@@ -64,7 +68,7 @@ class SurplusScraper:
         price = SurplusScraper.price(node)
         quantity = SurplusScraper.quantity(node)
         image = SurplusScraper.image(node)
-        link  = node_url
+        link = node_url
         item = SurplusItem(status, title, price, quantity, image, link)
         item.print()
         return item
@@ -103,9 +107,12 @@ class SurplusScraper:
             return image_src
         return ""
 
+
 class Queue:
     def __init__(self, queue_name):
-        self.queue = persistqueue.SQLiteQueue("db/{}".format(queue_name), auto_commit=True)
+        self.queue = persistqueue.SQLiteQueue("db/{}".format(queue_name),
+                                              auto_commit=True)
+
 
 class SurplusDb:
     def __init__(self, db_file):
@@ -113,8 +120,14 @@ class SurplusDb:
         self.c = self.conn.cursor()
 
         # Create table if it doesn't exist
-        self.c.execute('''CREATE TABLE IF NOT EXISTS surplus
-             (status text, title text, price text, quantity text, image text, link text)''')
+        self.c.execute('''CREATE TABLE IF NOT EXISTS surplus (
+             status text,
+             title text,
+             price text,
+             quantity text,
+             image text,
+             link text
+         )''')
 
     def get_all(self):
         self.c.execute('SELECT * FROM surplus')
@@ -140,6 +153,7 @@ class SurplusDb:
         self.c.execute('''DELETE FROM surplus''')
         self.conn.commit()
 
+
 def scrape():
     url = 'https://www.pdx.edu/surplus/items-for-sale?page={}'
 
@@ -152,20 +166,15 @@ def scrape():
         all_items.extend([SurplusScraper().scrape_from_grid(i) for i in items])
     return all_items
 
-def run():
-    pathlib.Path('db').mkdir(parents=True, exist_ok=True)
-    db = SurplusDb('db/surplus.db')
 
-    db_items = db.get_all()
-    scraped_items = scrape()
-
+def run(db_items, scraped_items):
     change_candidates = []
 
     removed = []
     not_removed = []
-    for cnt_i,i in enumerate(db_items):
+    for cnt_i, i in enumerate(db_items):
         db_item_found = False
-        for cnt_j,j in enumerate(scraped_items):
+        for cnt_j, j in enumerate(scraped_items):
             if i.link == j.link:
                 change_candidates.append((cnt_i, cnt_j))
                 db_item_found = True
@@ -186,34 +195,90 @@ def run():
             added.append(i)
 
     modified = []
+    marked_for_removal = []
     for i, j in change_candidates:
         if db_items[i] != scraped_items[j]:
-            modified.append(scraped_items[j])
+            if scraped_items[j].quantity == "SOLD OUT":
+                removed.append(scraped_items[j])
+                marked_for_removal.append(j)
+            else:
+                modified.append((db_items[i], scraped_items[j]))
 
-    generate_events(added, removed, modified)
+    for index in sorted(marked_for_removal, reverse=True):
+        del scraped_items[index]
 
-    db.clear()
-    db.insert_items(not_removed + scraped_items)
+    return (added, removed, modified, not_removed + scraped_items)
 
 
 def generate_events(added, removed, modified):
+    r_events = []
+    m_events = []
+    a_events = []
+
+    print("removed:")
+    for item in removed:
+        event = {
+            'event':    'removed',
+            'title':    item.title,
+            'price':    item.price,
+            'quantity': item.quantity,
+            'image':    item.image,
+            'link':     item.link,
+        }
+        item.print()
+        r_events.append(event)
+
+    print("added:")
+    for item in added:
+        event = {
+            'event':    'added',
+            'title':    item.title,
+            'price':    item.price,
+            'quantity': item.quantity,
+            'image':    item.image,
+            'link':     item.link,
+        }
+        item.print()
+        a_events.append(event)
+
+    print("modified:")
+    for (old_item, new_item) in modified:
+        changed_fields = []
+
+        event = {
+            'event':    'modified',
+            'title':    new_item.title,
+            'price':    new_item.price,
+            'quantity': new_item.quantity,
+            'image':    new_item.image,
+            'link':     new_item.link,
+            'changed':  changed_fields,
+        }
+        new_item.print()
+        m_events.append(event)
+
+    return r_events + m_events + a_events
+
+
+def send_to_queues(events):
     queues = [Queue(t) for t in ['slack', 'irc', 'twitter']]
-    event_lists = [('removed', removed), ('modified', modified), ('added', added)]
 
-    for (event_type, events) in event_lists:
-        print("{}:".format(event_type))
-        for item in events:
-            event = {
-                'event':    event_type,
-                'title':    item.title,
-                'price':    item.price,
-                'quantity': item.quantity,
-                'image':    item.image,
-                'link':     item.link,
-            }
-            for q in queues:
-                q.queue.put(event)
-            item.print()
+    for event in events:
+        for q in queues:
+            q.queue.put(event)
 
 
-run()
+if __name__ == "__main__":
+    pathlib.Path('db').mkdir(parents=True, exist_ok=True)
+    db = SurplusDb('db/surplus.db')
+
+    db_items = db.get_all()
+    scraped_items = scrape()
+
+    (added, removed, modified, new_db_items) = run(db_items, scraped_items)
+
+    events = generate_events(added, removed, modified)
+    send_to_queues(events)
+
+    db.clear()
+    db.insert_items(new_db_items)
