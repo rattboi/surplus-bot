@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
+import sqlite3
 import requests
 from bs4 import BeautifulSoup as bs
-import sqlite3
-import persistqueue
+import persistqueue as pq
 import pathlib2 as pathlib
-import re
 
 
 class SurplusItem:
@@ -40,15 +40,6 @@ class SurplusItem:
                 hash(self.link))
 
 
-class SurplusEvent:
-    def __init__(self, event, item):
-        self.event = event
-        self.title = item.title
-        self.price = item.price
-        self.image = item.image
-        self.link = item.link
-
-
 class SurplusScraper:
     def scrape_from_grid(self, bs_item):
         grid_title_el = bs_item.find_all("div", class_="views-field-title")
@@ -73,6 +64,7 @@ class SurplusScraper:
         item.print()
         return item
 
+    @staticmethod
     def status(item):
         status_el = item.find_all("h5", class_="item-sold")
         if status_el:
@@ -80,24 +72,28 @@ class SurplusScraper:
             return re.sub(r'^status: ?', '', status_text, flags=re.IGNORECASE)
         return ""
 
+    @staticmethod
     def title(item):
         title_el = item.find_all("h1", class_="title")
         if title_el:
             return title_el[0].text
         return ""
 
+    @staticmethod
     def price(item):
         price_el = item.find_all("ul", class_="prices")
         if price_el:
             return price_el[0].find('li').text
         return ""
 
+    @staticmethod
     def quantity(item):
         quantity_el = item.find_all("div", class_="item-quantity")
         if quantity_el:
             return quantity_el[0].find('p', class_="value").text
         return ""
 
+    @staticmethod
     def image(item):
         image_el = item.find_all("div", class_="item-image-area")
         if image_el:
@@ -107,11 +103,6 @@ class SurplusScraper:
             return image_src
         return ""
 
-
-class Queue:
-    def __init__(self, queue_name):
-        self.queue = persistqueue.SQLiteQueue("db/{}".format(queue_name),
-                                              auto_commit=True)
 
 
 class SurplusDb:
@@ -167,11 +158,11 @@ def scrape():
     return all_items
 
 
-def run(db_items, scraped_items):
-    change_candidates = []
-
+def check_removed(db_items, scraped_items, scraper):
     removed = []
     not_removed = []
+    change_candidates = []
+
     for cnt_i, i in enumerate(db_items):
         db_item_found = False
         for cnt_j, j in enumerate(scraped_items):
@@ -179,23 +170,33 @@ def run(db_items, scraped_items):
                 change_candidates.append((cnt_i, cnt_j))
                 db_item_found = True
         if not db_item_found:
-            removal_candidate = SurplusScraper().scrape(i.link)
+            removal_candidate = scraper.scrape(i.link)
             if removal_candidate.status != "Current":
                 removed.append(removal_candidate)
             else:
                 not_removed.append(removal_candidate)
+    return removed, not_removed, change_candidates
 
+
+def check_added(db_items, scraped_items):
     added = []
+
     for i in scraped_items:
+        if i.quantity == "SOLD OUT":
+            continue
         scraped_item_found = False
         for j in db_items:
             if i.link == j.link:
                 scraped_item_found = True
         if not scraped_item_found:
             added.append(i)
+    return added
 
+
+def check_modified(change_candidates, removed, db_items, scraped_items):
     modified = []
     marked_for_removal = []
+
     for i, j in change_candidates:
         if db_items[i] != scraped_items[j]:
             if scraped_items[j].quantity == "SOLD OUT":
@@ -203,6 +204,21 @@ def run(db_items, scraped_items):
                 marked_for_removal.append(j)
             else:
                 modified.append((db_items[i], scraped_items[j]))
+    return modified, marked_for_removal, removed
+
+
+def run(db_items, scraped_items, scraper):
+    removed, not_removed, change_candidates = check_removed(db_items,
+                                                            scraped_items,
+                                                            scraper)
+
+    added = check_added(db_items,
+                        scraped_items)
+
+    modified, marked_for_removal, removed = check_modified(change_candidates,
+                                                           removed,
+                                                           db_items,
+                                                           scraped_items)
 
     for index in sorted(marked_for_removal, reverse=True):
         del scraped_items[index]
@@ -210,43 +226,32 @@ def run(db_items, scraped_items):
     return (added, removed, modified, not_removed + scraped_items)
 
 
-def generate_events(added, removed, modified):
-    r_events = []
-    m_events = []
-    a_events = []
+def generate_events(added, removed, changed):
 
-    print("removed:")
-    for item in removed:
-        event = {
-            'event':    'removed',
+    def make_simple_event(event_name, item):
+        return {
+            'event':    event_name,
             'title':    item.title,
             'price':    item.price,
             'quantity': item.quantity,
             'image':    item.image,
             'link':     item.link,
         }
-        item.print()
-        r_events.append(event)
 
-    print("added:")
-    for item in added:
-        event = {
-            'event':    'added',
-            'title':    item.title,
-            'price':    item.price,
-            'quantity': item.quantity,
-            'image':    item.image,
-            'link':     item.link,
-        }
-        item.print()
-        a_events.append(event)
-
-    print("modified:")
-    for (old_item, new_item) in modified:
+    def make_change_event(event_name, item):
+        (old_item, new_item) = item
         changed_fields = []
+        if old_item.title != new_item.title:
+            changed_fields.append('title')
+        if old_item.price != new_item.price:
+            changed_fields.append('price')
+        if old_item.quantity != new_item.quantity:
+            changed_fields.append('quantity')
+        if old_item.image != new_item.image:
+            changed_fields.append('image')
 
-        event = {
-            'event':    'modified',
+        return {
+            'event':    event_name,
             'title':    new_item.title,
             'price':    new_item.price,
             'quantity': new_item.quantity,
@@ -254,31 +259,45 @@ def generate_events(added, removed, modified):
             'link':     new_item.link,
             'changed':  changed_fields,
         }
-        new_item.print()
-        m_events.append(event)
 
-    return r_events + m_events + a_events
+    event_map = [('removed', removed, make_simple_event),
+                 ('added', added, make_simple_event),
+                 ('changed', changed, make_change_event)]
+
+    events = []
+    for (event_type, event_list, event_generator) in event_map:
+        print("{}:".format(event_type))
+        events.extend([event_generator(event_type, item) for item in event_list])
+
+    return events
 
 
 def send_to_queues(events):
-    queues = [Queue(t) for t in ['slack', 'irc', 'twitter']]
+
+    def create_queue(queue_name):
+        return pq.SQLiteQueue("db/{}".format(queue_name), auto_commit=True)
+
+    queues = [create_queue(t) for t in ['slack', 'irc', 'twitter']]
 
     for event in events:
-        for q in queues:
-            q.queue.put(event)
+        for queue in queues:
+            queue.put(event)
 
 
-if __name__ == "__main__":
+def main():
     pathlib.Path('db').mkdir(parents=True, exist_ok=True)
     db = SurplusDb('db/surplus.db')
 
     db_items = db.get_all()
     scraped_items = scrape()
 
-    (added, removed, modified, new_db_items) = run(db_items, scraped_items)
+    (added, removed, modified, new_db_items) = run(db_items, scraped_items, SurplusScraper())
 
     events = generate_events(added, removed, modified)
     send_to_queues(events)
 
     db.clear()
     db.insert_items(new_db_items)
+
+if __name__ == "__main__":
+    main()
