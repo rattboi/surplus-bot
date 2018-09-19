@@ -104,3 +104,5 @@ db/
 surplus/secret.py
 
 *.jpg
+
+.pytest_cache/
