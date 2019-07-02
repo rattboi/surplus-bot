@@ -31,10 +31,10 @@ Setup crontab:
 ```
 #write out current crontab
 crontab -l > mycron
-echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/slack.py" >> mycron
-echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/irc.py" >> mycron
-echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/twitter.py" >> mycron
-echo "*/5 * * * * cd /home/rattboi/surplus-bot && /home/rattboi/.virtualenvs/surplus-bot/bin/python /home/rattboi/surplus-bot/surplus/collect.py" >> mycron
+echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/slack.py" >> mycron
+echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/irc.py" >> mycron
+echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/twitter.py" >> mycron
+echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/collect.py" >> mycron
 #install new cron file
 crontab mycron
 rm mycron
