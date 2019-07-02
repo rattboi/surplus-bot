@@ -277,7 +277,7 @@ def send_to_queues(events):
     def create_queue(queue_name):
         return pq.SQLiteQueue("db/{}".format(queue_name), auto_commit=True)
 
-    queues = [create_queue(t) for t in ['slack', 'irc', 'twitter']]
+    queues = [create_queue(t) for t in ['slack', 'irc', 'rc', 'twitter']]
 
     for event in events:
         for queue in queues:
