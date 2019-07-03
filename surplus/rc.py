@@ -51,6 +51,7 @@ def post_to_rc(event):
                 "short": true,
             }],
             "image_url": image,
+        }]
     }
 
     response = requests.post(
