@@ -19,14 +19,38 @@ def post_to_rc(event):
     image = event['image']
 
     if event_type == "added":
+        color = "#00ff00"
         text = "*Item Added* [Link]({})".format(link)
     elif event_type == "modified":
+        color = "#ffff00"
         text = "*Item Changed* [Link]({})".format(link)
     elif event_type == "removed":
+        color = "#ff0000"
         text = "*Item Removed*"
+    else:
+        color = "#0000ff"  # What's this? Just in case, I guess
+
+    fallback = "{} - {} (#: {}): {}".format(title, price, quant, link)
 
     rc_data = {
         "text": text
+        "attachments": [{
+            "fallback": fallback,
+            "color": color,
+            "fields": [{
+                "title": "Title",
+                "value": title,
+                "short": true,
+            },{
+                "title": "Price",
+                "value": price,
+                "short": true,
+            },{
+                "title": "Quantity",
+                "value": quant,
+                "short": true,
+            }],
+            "image_url": image,
     }
 
     response = requests.post(
