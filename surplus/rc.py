@@ -40,15 +40,15 @@ def post_to_rc(event):
             "fields": [{
                 "title": "Title",
                 "value": title,
-                "short": true,
+                "short": True,
             },{
                 "title": "Price",
                 "value": price,
-                "short": true,
+                "short": True,
             },{
                 "title": "Quantity",
                 "value": quant,
-                "short": true,
+                "short": True,
             }],
             "image_url": image,
         }]
