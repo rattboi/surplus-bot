@@ -20,13 +20,13 @@ def post_to_rc(event):
 
     if event_type == "added":
         color = "#00ff00"
-        text = "*Item Added* [Link]({})".format(link)
+        text = "*Item Added* [{}]({})".format(title, link)
     elif event_type == "modified":
         color = "#ffff00"
-        text = "*Item Changed* [Link]({})".format(link)
+        text = "*Item Changed* [{}]({})".format(title, link)
     elif event_type == "removed":
         color = "#ff0000"
-        text = "*Item Removed*"
+        text = "*Item Removed* {}".format(title)
     else:
         color = "#0000ff"  # What's this? Just in case, I guess
 
