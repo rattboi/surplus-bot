@@ -33,7 +33,7 @@ def post_to_rc(event):
     fallback = "{} - {} (#: {}): {}".format(title, price, quant, link)
 
     rc_data = {
-        "text": text
+        "text": text,
         "attachments": [{
             "fallback": fallback,
             "color": color,
