@@ -1,74 +1,61 @@
 import json
 import requests
 
-try:
-    from emitter import Emitter
-except:
-    from surplus.emitter import Emitter
-
-try:
-    import secret as secret
-except:
-    import surplus.secret as secret
+from emitter import Emitter
+import secret as secret
 
 class SlackEmitter(Emitter):
-    def post(self, event):
-        webhook_url = secret.webhook_url
+    def __init__(self, name, webhook):
+        self.webhook = webhook
+        super().__init__(name)
 
-        event_type = event['event']
-        title = event['title']
-        price = event['price']
-        quant = event['quantity']
-        link = event['link']
-        image = event['image']
+    def format(self, event_type, event):
+        colors = {
+            'added':    "#00ff00",
+            'modified': "#ffff00",
+            'removed':  "#ff0000"
+        }
 
-        if event_type == "added":
-            color = "#00ff00"
-            text = "*Item Added* (<{}|Link>)".format(link)
-        elif event_type == "modified":
-            color = "#ffff00"
-            text = "*Item Changed* (<{}|Link>)".format(link)
-        elif event_type == "removed":
-            color = "#ff0000"
-            text = "*Item Removed*"
-        else:
-            color = "#0000ff"  # What's this? Just in case, I guess
+        texts = {
+            'added':    f"*Item Added* (<{event['link']}|Link>)"
+            'modified': f"*Item Changed* (<{event['link']}|Link>)"
+            'removed':  f"*Item Removed*"
+        }
 
-        fallback = "{} - {} (#: {}): {}".format(title, price, quant, link)
-
-        slack_data = {
+        return {
             "unfurl_links": True,
             "attachments": [{
-                "fallback": fallback,
-                "pretext": text,
-                "color": color,
+                "fallback": f"{event['title']} - {event['price']} (#: {event['quant']}): {event['link']}",
+                "pretext": texts[event_type],
+                "color": colors[event_type],
                 "fields": [{
                     "title": "Title",
-                    "value": title,
+                    "value": event['title'],
                     "short": True,
                 },{
                     "title": "Price",
-                    "value": price,
+                    "value": event['price'],
                     "short": True,
                 },{
                     "title": "Quantity",
-                    "value": quant,
+                    "value": event['quant'],
                     "short": True,
                 }],
-                "image_url": image,
+                "image_url": event['image'],
             }]
         }
 
+    def post(self, event):
+        data = self.parse(event)
+
         response = requests.post(
-            webhook_url, data=json.dumps(slack_data),
+            self.webhook, data=json.dumps(data),
             headers={'Content-Type': 'application/json'}
         )
         if response.status_code != 200:
             raise ValueError(
-                'Request to slack returned an error %s, the response is:\n%s'
-                % (response.status_code, response.text)
+                f"Request to {self.name} returned an error {response.status_code}, the response is:\n{response.text}"
         )
 
 if __name__=='__main__':
-    emitter = SlackEmitter('slack')
-    emitter.emit()
+    SlackEmitter('slack', secret.webhook_url).emit()

@@ -18,6 +18,10 @@ class Emitter():
                 print("No more events to process")
                 sys.exit()
 
+    def parse(self, event):
+        event_type = event['event']
+        return self.format(event_type, event)
+
     def post(self, event):
         pass
 
