@@ -13,9 +13,9 @@ class TwitterEmitter(Emitter):
 
     def format(self, event_type, event):
         if event_type == "added":
-            return f"*Item Added*\n{event['title']} - {event['price']} - (#: {event['quant']}) - ({event['link']})"
+            return f"*Item Added*\n{event['title']} - {event['price']} - (#: {event['quantity']}) - ({event['link']})"
         elif event_type == "modified":
-            return f"*Item Changed*\n{event['title']} - {event['price']} - (#: {event['quant']}) - ({event['link']})"
+            return f"*Item Changed*\n{event['title']} - {event['price']} - (#: {event['quantity']}) - ({event['link']})"
         elif event_type == "removed":
             return f"*Item Removed*\n{event['title']}"
 

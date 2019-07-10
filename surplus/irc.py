@@ -5,9 +5,9 @@ from emitter import Emitter
 class IrcEmitter(Emitter):
     def format(self, event_type, event):
         if event_type == "added":
-            return f"*\x0309Item Added\x03*   \x02{event['title']}\x02 - {event['price']} - (#: {event['quant']}) - ({event['link']})\n"
+            return f"*\x0309Item Added\x03*   \x02{event['title']}\x02 - {event['price']} - (#: {event['quantity']}) - ({event['link']})\n"
         elif event_type == "modified":
-            return f"*\x0307Item Changed\x03* \x02{event['title']}\x02 - {event['price']} - (#: {event['quant']}) - ({event['link']})\n"
+            return f"*\x0307Item Changed\x03* \x02{event['title']}\x02 - {event['price']} - (#: {event['quantity']}) - ({event['link']})\n"
         elif event_type == "removed":
             return f"*\x0304Item Removed\x03* \x02{event['title']}\n"
 
