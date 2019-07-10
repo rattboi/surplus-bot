@@ -1,25 +1,17 @@
 import socket
 
-try:
-    from emitter import Emitter
-except:
-    from surplus.emitter import Emitter
+from emitter import Emitter
 
 class IrcEmitter(Emitter):
-    def post(self, event):
-        event_type = event['event']
-        title = event['title']
-        price = event['price']
-        quant = event['quantity']
-        link = event['link']
-
+    def format(self, event_type, event):
         if event_type == "added":
-            message = "*\x0309Item Added\x03*   \x02{}\x02 - {} - (#: {}) - ({})\n".format(title, price, quant, link)
+            return f"*\x0309Item Added\x03*   \x02{event['title']}\x02 - {event['price']} - (#: {event['quant']}) - ({event['link']})\n"
         elif event_type == "modified":
-            message = "*\x0307Item Changed\x03* \x02{}\x02 - {} - (#: {}) - ({})\n".format(title, price, quant, link)
+            return f"*\x0307Item Changed\x03* \x02{event['title']}\x02 - {event['price']} - (#: {event['quant']}) - ({event['link']})\n"
         elif event_type == "removed":
-            message = "*\x0304Item Removed\x03* \x02{}\x02\n".format(title)
+            return f"*\x0304Item Removed\x03* \x02{event['title']}\n"
 
+    def post(self, event):
         # Create a TCP/IP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -29,10 +21,9 @@ class IrcEmitter(Emitter):
 
         try:
             # Send data
-            sock.send(message.encode())
+            sock.send(self.parse(event).encode())
         finally:
             sock.close()
 
 if __name__=='__main__':
-    emitter = IrcEmitter('irc')
-    emitter.emit()
+    IrcEmitter('irc').emit()
