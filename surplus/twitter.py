@@ -24,7 +24,7 @@ class TwitterEmitter(Emitter):
 
         filename = 'temp.jpg'
         try:
-            request = requests.get(image, stream=True)
+            request = requests.get(event['image'], stream=True)
             if request.status_code == 200:
                 with open(filename, 'wb') as image:
                     for chunk in request:
