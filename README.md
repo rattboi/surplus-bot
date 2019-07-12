@@ -17,6 +17,13 @@ Setup Slack webhook secret:
 echo "webhook_url = <your hook>" >> surplus/secret.py
 ```
 
+Setup Rocket.Chat webhook secret:
+
+```
+echo "rocket_hook_url = <your hook>" >> surplus/secret.py
+echo "rocket_chan = <your channel>" >> surplus/secret.py
+```
+
 Setup Twitter bot secrets:
 
 ```
@@ -33,6 +40,7 @@ Setup crontab:
 crontab -l > mycron
 echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/slack.py" >> mycron
 echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/irc.py" >> mycron
+echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/rocket.py" >> mycron
 echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/twitter.py" >> mycron
 echo "*/5 * * * * cd /home/$(whoami)/surplus-bot && /home/$(whoami)/.virtualenvs/surplus-bot/bin/python /home/$(whoami)/surplus-bot/surplus/collect.py" >> mycron
 #install new cron file
