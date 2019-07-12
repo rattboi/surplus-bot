@@ -16,7 +16,7 @@ class RocketEmitter(SlackishEmitter):
         }
 
         return {
-            "channel": "#surplus",
+            "channel": secret.rocket_chan,
             "text": texts[event_type],
             "attachments": [{
                 "fallback": f"{event['title']} - {event['price']} (#: {event['quantity']}): {event['link']}",

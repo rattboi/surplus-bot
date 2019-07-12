@@ -21,6 +21,7 @@ Setup Rocket.Chat webhook secret:
 
 ```
 echo "rocket_hook_url = <your hook>" >> surplus/secret.py
+echo "rocket_chan = <your channel>" >> surplus/secret.py
 ```
 
 Setup Twitter bot secrets:
