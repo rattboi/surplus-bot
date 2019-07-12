@@ -1,80 +1,42 @@
-import json
-import requests
-import persistqueue
-import sys
-from persistqueue.exceptions import Empty
-try:
-    import secret as secret
-except:
-    import surplus.secret as secret
+from slackish import SlackishEmitter
+import secret as secret
 
-def post_to_slack(event):
-    webhook_url = secret.webhook_url
+class SlackEmitter(SlackishEmitter):
+    def format(self, event_type, event):
+        colors = {
+            'added':    "#00ff00",
+            'modified': "#ffff00",
+            'removed':  "#ff0000"
+        }
 
-    event_type = event['event']
-    title = event['title']
-    price = event['price']
-    quant = event['quantity']
-    link = event['link']
-    image = event['image']
+        texts = {
+            'added':    f"*Item Added* (<{event['link']}|Link>)",
+            'modified': f"*Item Changed* (<{event['link']}|Link>)",
+            'removed':  f"*Item Removed*"
+        }
 
-    if event_type == "added":
-        color = "#00ff00"
-        text = "*Item Added* (<{}|Link>)".format(link)
-    elif event_type == "modified":
-        color = "#ffff00"
-        text = "*Item Changed* (<{}|Link>)".format(link)
-    elif event_type == "removed":
-        color = "#ff0000"
-        text = "*Item Removed*"
-    else:
-        color = "#0000ff"  # What's this? Just in case, I guess
+        return {
+            "unfurl_links": True,
+            "attachments": [{
+                "fallback": f"{event['title']} - {event['price']} (#: {event['quantity']}): {event['link']}",
+                "pretext": texts[event_type],
+                "color": colors[event_type],
+                "fields": [{
+                    "title": "Title",
+                    "value": event['title'],
+                    "short": True,
+                },{
+                    "title": "Price",
+                    "value": event['price'],
+                    "short": True,
+                },{
+                    "title": "Quantity",
+                    "value": event['quantity'],
+                    "short": True,
+                }],
+                "image_url": event['image'],
+            }]
+        }
 
-    fallback = "{} - {} (#: {}): {}".format(title, price, quant, link)
-
-    slack_data = {
-        "unfurl_links": True,
-        "attachments": [{
-            "fallback": fallback,
-            "pretext": text,
-            "color": color,
-            "fields": [{
-                "title": "Title",
-                "value": title,
-                "short": True,
-            },{
-                "title": "Price",
-                "value": price,
-                "short": True,
-            },{
-                "title": "Quantity",
-                "value": quant,
-                "short": True,
-            }],
-            "image_url": image,
-        }]
-    }
-
-    response = requests.post(
-        webhook_url, data=json.dumps(slack_data),
-        headers={'Content-Type': 'application/json'}
-    )
-    if response.status_code != 200:
-        raise ValueError(
-            'Request to slack returned an error %s, the response is:\n%s'
-            % (response.status_code, response.text)
-    )
-
-def main():
-    q = persistqueue.SQLiteQueue('db/slack', auto_commit=True)
-
-    while True:
-        try:
-            event = q.get(block=False)
-            print("Posting '{}' event to Slack".format(event['event']))
-            post_to_slack(event)
-        except Empty:
-            print("No more events to process")
-            sys.exit();
-
-main()
+if __name__=='__main__':
+    SlackEmitter('slack', secret.webhook_url).emit()
